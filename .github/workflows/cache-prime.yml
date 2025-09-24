@@ -1,0 +1,44 @@
+name: Cache Prime Demo
+
+# Manual trigger for first run; you can also add schedule/push triggers
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Example: set up Python (optional; change or remove for other ecosystems)
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      # Restore/create cache (the step id is cache-deps so we can read the output)
+      - name: Restore or create cache
+        id: cache-deps
+        uses: actions/cache@v4
+        with:
+          # Path to cache; adjust for your package manager (pip, npm, Maven, etc.)
+          path: ~/.cache/pip
+          # Prime key with the required prefix 'cache-bc13628'
+          key: cache-bc13628-${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          # Useful fallback restore keys
+          restore-keys: |
+            cache-bc13628-${{ runner.os }}-pip-
+            cache-bc13628-
+
+      # Install dependencies (this will populate the cache on a miss)
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; else echo "No requirements.txt, nothing to install"; fi
+
+      # The required step: prints whether cache was a hit or miss
+      - name: prime-cache-bc13628
+        run: |
+          echo "Cache hit? ${{ steps.cache-deps.outputs.cache-hit }}"
